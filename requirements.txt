@@ -1,3 +1,4 @@
+netifaces
 pwntools
 argparse
 getmac
