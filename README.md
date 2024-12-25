@@ -7,7 +7,7 @@
 ![repo size](https://img.shields.io/github/repo-size/NullBrunk/arpspoofer?style=for-the-badge)
 </div>
 
-![image](https://github.com/user-attachments/assets/8137b781-006d-40bc-9061-608238ac53d2)
+![image](https://github.com/user-attachments/assets/e64f788c-2f84-43a2-955a-6451811f0190)
 
 
 
