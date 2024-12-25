@@ -1,0 +1,4 @@
+pwntools
+argparse
+getmac
+scapy
