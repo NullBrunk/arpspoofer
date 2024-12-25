@@ -51,8 +51,8 @@ _____ _____________  ____________   ____   _____/ ____\\___________
 
 def parse_args():
     """
-        Parses the CLI given arguments
-        Returns the gateway IP, target IP, Interface Name and delay
+    Parses the CLI given arguments
+    Returns the gateway IP, target IP, Interface Name and delay
     """
 
     parser = argparse.ArgumentParser()
