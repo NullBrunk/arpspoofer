@@ -14,7 +14,7 @@
 ## 🚀 Usage
 This tool allows you to perform an ARP cache poisoning attacks between two targets (a `victim` and a `gateway`) on a local network. It manipulates the ARP tables of the victims to redirect network traffic through the attacker, enabling interception or modification of data.
 
-> [!IMPORTANT]
+> [!TIP]
 > In the help menu, you can see `-g GATEWAY` and `-t TARGET`. However, if you want to capture traffic between two victims without one of them being the gateway, you can still use this tool with `-g TARGET1` and `-t TARGET2`.
 
 ![image](https://github.com/user-attachments/assets/044cc4eb-50cc-48a6-90d7-442aced644dd)
