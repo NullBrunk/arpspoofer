@@ -17,7 +17,7 @@ This tool allows you to perform an ARP cache poisoning attacks between two targe
 > [!TIP]
 > In the help menu, you can see `-g GATEWAY` and `-t TARGET`. However, if you want to capture traffic between two victims without one of them being the gateway, you can still use this tool with `-g TARGET1` and `-t TARGET2`.
 
-![image](https://github.com/user-attachments/assets/044cc4eb-50cc-48a6-90d7-442aced644dd)
+![image](https://github.com/user-attachments/assets/c642eccc-908d-43bf-846b-f8f3425105fe)
 
 
 ## ⚒️ Installation
