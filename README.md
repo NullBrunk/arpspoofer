@@ -7,7 +7,7 @@
 ![repo size](https://img.shields.io/github/repo-size/NullBrunk/arpspoofer?style=for-the-badge)
 </div>
 
-![arpspoofer](https://github.com/user-attachments/assets/48587fde-89cd-4488-9165-38940e3ab72a)
+![image](https://github.com/user-attachments/assets/4408b525-76ca-4cb2-8534-46dee73e8207)
 
 
 
@@ -17,7 +17,7 @@ This tool allows you to perform an ARP cache poisoning attacks between two targe
 > [!TIP]
 > In the help menu, you can see `-g GATEWAY` and `-t TARGET`. However, if you want to capture traffic between two victims without one of them being the gateway, you can still use this tool with `-g TARGET1` and `-t TARGET2`.
 
-![image](https://github.com/user-attachments/assets/c642eccc-908d-43bf-846b-f8f3425105fe)
+![image](https://github.com/user-attachments/assets/172de9c9-787e-44fc-8021-f6700c37b023)
 
 
 ## ⚒️ Installation
