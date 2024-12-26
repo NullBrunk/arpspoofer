@@ -116,8 +116,7 @@ class ACP:
 
 
     def show_is_at(self, target_ip1: str, target_ip2: str, mac_address: str) -> None:
-        info(f"ARP to {target_ip2} - {target_ip1} is-at c6:08:63:4b:2e:d7", True)
-        #{mac_address}
+        info(f"ARP to {target_ip2} - {target_ip1} is-at {mac_address}", True)
 
     def send_is_at(self, dst_ip: str, dst_mac: str, src_ip: str, src_mac: str) -> None:
         """
